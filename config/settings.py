@@ -1,6 +1,5 @@
 ﻿from __future__ import annotations
 
-import os
 from pathlib import Path
 from functools import lru_cache
 
@@ -55,6 +54,16 @@ class Settings(BaseSettings):
     kling_image_access_key: str = ""
     kling_image_secret_key: str = ""
     kling_image_model: str = "kling-v1-5"
+
+    # ── Atlas Cloud Media API（可选视觉后端） ──
+    visual_image_provider: str = "kling"  # "kling" | "atlascloud"
+    visual_video_provider: str = "kling"  # "kling" | "atlascloud"
+    atlascloud_api_key: str = ""
+    atlascloud_media_base_url: str = "https://api.atlascloud.ai/api/v1"
+    atlascloud_image_model: str = "bytedance/seedream-v5.0-lite"
+    atlascloud_video_model: str = "bytedance/seedance-2.0-fast/image-to-video"
+    atlascloud_video_resolution: str = "720p"
+    atlascloud_video_generate_audio: bool = True
 
     # ── 飞书 Feishu ──
     feishu_app_id: str = ""

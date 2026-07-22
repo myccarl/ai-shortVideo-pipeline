@@ -116,6 +116,7 @@ Core environment variables (full list in `.env.example`):
 | `DEEPSEEK_API_KEY` | Text LLM |
 | `GLM_API_KEY` | Multimodal moderation |
 | `KLING_ACCESS_KEY` / `KLING_SECRET_KEY` | Text-to-image / image-to-video |
+| `ATLASCLOUD_API_KEY` | Optional Atlas Cloud Media API backend when `VISUAL_IMAGE_PROVIDER` or `VISUAL_VIDEO_PROVIDER` is `atlascloud` |
 | `VOLCENGINE_TTS_*` or `MINIMAX_TTS_*` | Speech synthesis |
 | `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | Tracing (optional) |
 | `GATEWAY_AUTH_JWT_SECRET` | JWT signing key for Java gateway (≥ 32 bytes) |
