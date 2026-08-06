@@ -115,6 +115,7 @@ cd sl-vue && npm install && npm run dev
 | `DEEPSEEK_API_KEY` | 文本 LLM |
 | `GLM_API_KEY` | 多模态审核 |
 | `KLING_ACCESS_KEY` / `KLING_SECRET_KEY` | 文生图 / 图生视频 |
+| `ATLASCLOUD_API_KEY` | 可选 Atlas Cloud Media API 后端；当 `VISUAL_IMAGE_PROVIDER` 或 `VISUAL_VIDEO_PROVIDER` 设为 `atlascloud` 时使用 |
 | `VOLCENGINE_TTS_*` 或 `MINIMAX_TTS_*` | 语音合成 |
 | `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | 链路观测（可选）|
 | `GATEWAY_AUTH_JWT_SECRET` | Java 网关 JWT 签名（≥ 32 字节）|

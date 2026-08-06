@@ -6,6 +6,7 @@ import os
 import subprocess
 import tempfile
 
+from config.settings import get_settings
 from layers.L2_creative.style_engine import StyleTemplate
 from core.langfuse_client import observe
 from layers.L3_visual.prompt_safety import (
@@ -15,7 +16,11 @@ from layers.L3_visual.prompt_safety import (
     sanitize_visual_prompt,
 )
 from layers.L3_visual.providers.base import VideoResult
-from layers.L3_visual.providers.kling_v3 import image_to_video
+from layers.L3_visual.providers.atlascloud import (
+    image_to_video as _atlascloud_image_to_video,
+    is_atlascloud_provider,
+)
+from layers.L3_visual.providers.kling_v3 import image_to_video as _kling_image_to_video
 from layers.L3_visual.text_artifact_guard import inspect_text_artifacts
 from layers.L3_visual.text_to_image import generate_image
 
@@ -29,6 +34,41 @@ _VIDEO_ARTIFACT_MIN_FRAME_HITS = 2
 _TEXT_ARTIFACT_GUARD_BLOCKING = False
 _PROMPT_MAX_LEN = 2400
 _SINGLE_FRAME_BLOCK_TYPES = {"readable_text", "logo", "watermark", "subtitle"}
+
+
+async def image_to_video(
+    image_path: str,
+    prompt: str,
+    output_path: str,
+    duration_sec: int = 5,
+    aspect_ratio: str = "9:16",
+    quality: str = "standard",
+    character_ref_path: str | None = None,
+    camera_control: dict | None = None,
+) -> VideoResult:
+    """Route image-to-video generation to the configured visual backend."""
+    cfg = get_settings()
+    if is_atlascloud_provider(getattr(cfg, "visual_video_provider", "kling")):
+        return await _atlascloud_image_to_video(
+            image_path=image_path,
+            prompt=prompt,
+            output_path=output_path,
+            duration_sec=duration_sec,
+            aspect_ratio=aspect_ratio,
+            quality=quality,
+            character_ref_path=character_ref_path,
+            camera_control=camera_control,
+        )
+    return await _kling_image_to_video(
+        image_path=image_path,
+        prompt=prompt,
+        output_path=output_path,
+        duration_sec=duration_sec,
+        aspect_ratio=aspect_ratio,
+        quality=quality,
+        character_ref_path=character_ref_path,
+        camera_control=camera_control,
+    )
 
 
 def _fit_prompt_length(prompt: str, max_len: int = _PROMPT_MAX_LEN) -> str:

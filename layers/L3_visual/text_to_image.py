@@ -11,6 +11,10 @@ from config.settings import get_settings
 from core.langfuse_client import observe
 from layers.L3_visual.prompt_safety import fit_visual_prompt
 from layers.L3_visual.providers.base import ImageResult
+from layers.L3_visual.providers.atlascloud import (
+    is_atlascloud_provider,
+    text_to_image as atlascloud_text_to_image,
+)
 
 log = logging.getLogger(__name__)
 
@@ -43,6 +47,7 @@ async def generate_image(
     from layers.L3_visual.providers.kling_v3 import kling_image_headers
 
     cfg = get_settings()
+    requested_model = model
     if not model:
         model = cfg.kling_image_model
 
@@ -54,6 +59,24 @@ async def generate_image(
             IMAGE_PROMPT_MAX_LEN,
         )
         full_prompt = fit_visual_prompt(full_prompt, max_len=IMAGE_PROMPT_MAX_LEN)
+
+    if is_atlascloud_provider(getattr(cfg, "visual_image_provider", "kling")):
+        result = await atlascloud_text_to_image(
+            prompt=prompt,
+            output_path=output_path,
+            negative_prompt=negative_prompt,
+            aspect_ratio=aspect_ratio,
+            model=requested_model or getattr(cfg, "atlascloud_image_model", ""),
+            character_ref_path=character_ref_path,
+            positive_suffix=positive_suffix,
+        )
+        return await _attach_clip_consistency(
+            result,
+            image_path=output_path,
+            prompt=full_prompt,
+            storyboard_id=storyboard_id,
+            clip_no=clip_no,
+        )
 
     log.info(
         "[文生图] prompt=%s... aspect=%s model=%s ref=%s realism_suffix=%s",
