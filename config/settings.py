@@ -55,15 +55,18 @@ class Settings(BaseSettings):
     kling_image_secret_key: str = ""
     kling_image_model: str = "kling-v1-5"
 
-    # ── Atlas Cloud Media API（可选视觉后端） ──
+    # ── Optional visual backends ──
     visual_image_provider: str = "kling"  # "kling" | "atlascloud"
-    visual_video_provider: str = "kling"  # "kling" | "atlascloud"
+    visual_video_provider: str = "kling"  # "kling" | "atlascloud" | "muapi"
     atlascloud_api_key: str = ""
     atlascloud_media_base_url: str = "https://api.atlascloud.ai/api/v1"
     atlascloud_image_model: str = "bytedance/seedream-v5.0-lite"
     atlascloud_video_model: str = "bytedance/seedance-2.0-fast/image-to-video"
     atlascloud_video_resolution: str = "720p"
     atlascloud_video_generate_audio: bool = True
+    muapi_api_key: str = ""
+    muapi_media_base_url: str = "https://api.muapi.ai/api/v1"
+    muapi_video_model: str = "seedance-2-image-to-video-fast"
 
     # ── 飞书 Feishu ──
     feishu_app_id: str = ""

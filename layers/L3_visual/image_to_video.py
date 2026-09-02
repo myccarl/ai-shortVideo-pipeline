@@ -20,6 +20,10 @@ from layers.L3_visual.providers.atlascloud import (
     image_to_video as _atlascloud_image_to_video,
     is_atlascloud_provider,
 )
+from layers.L3_visual.providers.muapi import (
+    image_to_video as _muapi_image_to_video,
+    is_muapi_provider,
+)
 from layers.L3_visual.providers.kling_v3 import image_to_video as _kling_image_to_video
 from layers.L3_visual.text_artifact_guard import inspect_text_artifacts
 from layers.L3_visual.text_to_image import generate_image
@@ -48,7 +52,19 @@ async def image_to_video(
 ) -> VideoResult:
     """Route image-to-video generation to the configured visual backend."""
     cfg = get_settings()
-    if is_atlascloud_provider(getattr(cfg, "visual_video_provider", "kling")):
+    provider = getattr(cfg, "visual_video_provider", "kling")
+    if is_muapi_provider(provider):
+        return await _muapi_image_to_video(
+            image_path=image_path,
+            prompt=prompt,
+            output_path=output_path,
+            duration_sec=duration_sec,
+            aspect_ratio=aspect_ratio,
+            quality=quality,
+            character_ref_path=character_ref_path,
+            camera_control=camera_control,
+        )
+    if is_atlascloud_provider(provider):
         return await _atlascloud_image_to_video(
             image_path=image_path,
             prompt=prompt,
