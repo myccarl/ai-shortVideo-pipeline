@@ -6,6 +6,10 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+国内 AtomGit 托管：[ai-shortVideo-pipeline](https://atomgit.com/gcw_xb13HxDG/ai-shortVideo-pipeline)
+
+GitHub remains the primary repository; AtomGit is a one-way synchronized mirror for access in China.
+
 ## Overview
 
 `myAiVideos` is an open-source engineering project for automated Chinese-language short-video production, covering the full pipeline from **topic discovery → creative generation → visuals → audio → post-production → distribution**. It uses FastAPI as the orchestration core and a Java gateway as the platform governance layer (auth / routing / circuit breaker / metering / observability), coordinating multiple AI models for generation and quality gating.
