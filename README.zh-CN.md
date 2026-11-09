@@ -6,6 +6,10 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+国内 AtomGit 托管：[ai-shortVideo-pipeline](https://atomgit.com/gcw_xb13HxDG/ai-shortVideo-pipeline)
+
+GitHub 为主仓库，AtomGit 单向同步 GitHub 的更新，方便国内开发者访问。
+
 ## 简介
 
 `myAiVideos` 是一套面向中文短视频内容生产的开源工程，覆盖**选题 → 创意 → 视觉 → 音频 → 后期 → 分发**全链路。以 FastAPI 为编排核心，Java 网关作中台治理层（鉴权 / 路由 / 熔断 / 计量 / 可观测），调度多种 AI 模型完成生成与质量门控。
