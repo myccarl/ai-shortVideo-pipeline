@@ -122,6 +122,7 @@ Core environment variables (full list in `.env.example`):
 | `KLING_ACCESS_KEY` / `KLING_SECRET_KEY` | Text-to-image / image-to-video |
 | `ATLASCLOUD_API_KEY` | Optional Atlas Cloud Media API backend when `VISUAL_IMAGE_PROVIDER` or `VISUAL_VIDEO_PROVIDER` is `atlascloud` |
 | `MUAPI_API_KEY` | Optional MuAPI [Seedance 2 image-to-video API](https://muapi.ai/seedance-2) backend when `VISUAL_VIDEO_PROVIDER` is `muapi` |
+| `UBERLLM_API_KEY` | Optional [UberLLM](https://uberllm.dev/docs/media) backend (image and video models on one key) when `VISUAL_IMAGE_PROVIDER` or `VISUAL_VIDEO_PROVIDER` is `uberllm` |
 | `VOLCENGINE_TTS_*` or `MINIMAX_TTS_*` | Speech synthesis |
 | `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | Tracing (optional) |
 | `GATEWAY_AUTH_JWT_SECRET` | JWT signing key for Java gateway (≥ 32 bytes) |

@@ -56,8 +56,8 @@ class Settings(BaseSettings):
     kling_image_model: str = "kling-v1-5"
 
     # ── Optional visual backends ──
-    visual_image_provider: str = "kling"  # "kling" | "atlascloud"
-    visual_video_provider: str = "kling"  # "kling" | "atlascloud" | "muapi"
+    visual_image_provider: str = "kling"  # "kling" | "atlascloud" | "uberllm"
+    visual_video_provider: str = "kling"  # "kling" | "atlascloud" | "muapi" | "uberllm"
     atlascloud_api_key: str = ""
     atlascloud_media_base_url: str = "https://api.atlascloud.ai/api/v1"
     atlascloud_image_model: str = "bytedance/seedream-v5.0-lite"
@@ -67,6 +67,12 @@ class Settings(BaseSettings):
     muapi_api_key: str = ""
     muapi_media_base_url: str = "https://api.muapi.ai/api/v1"
     muapi_video_model: str = "seedance-2-image-to-video-fast"
+    uberllm_api_key: str = ""
+    uberllm_base_url: str = "https://api.uberllm.dev/v1"
+    uberllm_image_model: str = "venice/seedream-v5-lite"
+    uberllm_video_model: str = "bytedance/seedance-2-0-fast-image-to-video"
+    uberllm_video_resolution: str = "720p"
+    uberllm_video_audio: bool = False
 
     # ── 飞书 Feishu ──
     feishu_app_id: str = ""
