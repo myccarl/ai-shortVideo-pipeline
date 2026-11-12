@@ -104,7 +104,7 @@ def no_sleep(monkeypatch):
 async def test_uberllm_text_to_image_fits_payload_to_model_options(monkeypatch, tmp_path):
     import layers.L3_visual.providers.uberllm as module
 
-    artifact = f"{BASE}/media/artifacts/img-1/0"
+    artifact = f"{BASE}/files/file_img1/content"
     fake_client = FakeAsyncClient(routes={
         ("GET", f"{BASE}/models/venice/seedream-v5-lite"): [FakeResponse(IMAGE_OPTIONS)],
         ("POST", f"{BASE}/images/generations"): [FakeResponse({"data": [{"url": artifact}]})],
@@ -122,7 +122,9 @@ async def test_uberllm_text_to_image_fits_payload_to_model_options(monkeypatch, 
         positive_suffix="photoreal",
     )
 
-    assert result == ImageResult(url=artifact, local_path=str(out), model="venice/seedream-v5-lite")
+    # Callers get the downloaded copy, never the key-gated, 24h link.
+    assert result == ImageResult(url=str(out), local_path=str(out), model="venice/seedream-v5-lite")
+    assert artifact not in result.url
     assert out.read_bytes() == b"png-bytes"
     url, kwargs = fake_client.posts[0]
     assert url == f"{BASE}/images/generations"
@@ -152,7 +154,7 @@ async def test_uberllm_image_to_video_uploads_frame_and_snaps_duration(monkeypat
     import layers.L3_visual.providers.uberllm as module
 
     model = "bytedance/seedance-2-0-fast-image-to-video"
-    artifact = f"{BASE}/media/artifacts/job-1/0"
+    artifact = f"{BASE}/files/file_vid1/content"
     fake_client = FakeAsyncClient(routes={
         ("GET", f"{BASE}/models/{model}"): [FakeResponse(FAST_VIDEO_OPTIONS)],
         ("POST", f"{BASE}/files"): [FakeResponse({"id": "file_abc", "object": "file", "url": "u"})],
@@ -176,7 +178,10 @@ async def test_uberllm_image_to_video_uploads_frame_and_snaps_duration(monkeypat
     out = tmp_path / "clip.mp4"
     result = await module.image_to_video(str(image), "slow dolly in", str(out), duration_sec=3, aspect_ratio="9:16")
 
-    assert result == VideoResult(url=artifact, local_path=str(out), duration_sec=5, task_id="job-1", model=model)
+    assert result == VideoResult(url=str(out), local_path=str(out), duration_sec=5, task_id="job-1", model=model)
+    # The video link is on the API, so it is fetched server-side with the key.
+    assert fake_client.gets[-1][0] == artifact
+    assert fake_client.gets[-1][1]["headers"]["Authorization"] == "Bearer ull-key"
     assert out.read_bytes() == b"mp4-bytes"
     upload_url, upload_kwargs = fake_client.posts[0]
     assert upload_url == f"{BASE}/files"
@@ -307,3 +312,51 @@ async def test_image_to_video_routes_to_uberllm(monkeypatch, tmp_path):
     assert result.model == "ull"
     assert captured["image_path"] == "first.png"
     assert captured["aspect_ratio"] == "9:16"
+
+
+@pytest.mark.parametrize(
+    "base_url, artifact, expected",
+    [
+        ("https://api.uberllm.dev/v1", "https://api.uberllm.dev/v1/files/file_1/content", True),
+        ("https://api.uberllm.dev/v1", "https://API.UBERLLM.DEV:443/v1/files/file_1/content", True),
+        ("https://api.uberllm.dev/v1", "https://api.uberllm.dev/v1", True),
+        ("https://api.uberllm.dev", "https://api.uberllm.dev/v1/files/file_1/content", True),
+        # Lookalike hosts and userinfo tricks: a string prefix would match these.
+        ("https://api.uberllm.dev", "https://api.uberllm.dev.evil.example/steal", False),
+        ("https://api.uberllm.dev", "https://api.uberllm.dev@evil.example/steal", False),
+        ("https://api.uberllm.dev/v1", "https://api.uberllm.dev/v1evil/steal", False),
+        ("https://api.uberllm.dev/v1", "https://api.uberllm.dev/v1.evil.example/x", False),
+        ("https://api.uberllm.dev/v1", "https://api.uberllm.dev/other/x", False),
+        # Same host, different scheme or port is another origin.
+        ("https://api.uberllm.dev/v1", "http://api.uberllm.dev/v1/files/file_1/content", False),
+        ("https://api.uberllm.dev/v1", "https://api.uberllm.dev:8443/v1/files/file_1/content", False),
+        ("https://api.uberllm.dev/v1", "not a url", False),
+    ],
+)
+def test_uberllm_api_key_only_sent_to_api_origin(monkeypatch, base_url, artifact, expected):
+    import layers.L3_visual.providers.uberllm as module
+
+    monkeypatch.setattr(module, "get_settings", lambda: _settings(uberllm_base_url=base_url))
+    assert module._is_api_url(artifact) is expected
+
+
+@pytest.mark.anyio
+async def test_uberllm_download_from_lookalike_host_sends_no_key(monkeypatch, tmp_path):
+    import layers.L3_visual.providers.uberllm as module
+
+    base = "https://api.uberllm.dev"
+    artifact = "https://api.uberllm.dev.evil.example/file.png"
+    fake_client = FakeAsyncClient(routes={
+        ("GET", f"{base}/models/venice/seedream-v5-lite"): [FakeResponse(IMAGE_OPTIONS)],
+        ("POST", f"{base}/images/generations"): [FakeResponse({"data": [{"url": artifact}]})],
+        ("GET", artifact): [FakeResponse(content=b"png-bytes")],
+    })
+    monkeypatch.setattr(module, "get_settings", lambda: _settings(uberllm_base_url=base))
+    monkeypatch.setattr(module.httpx, "AsyncClient", lambda **kwargs: fake_client)
+
+    out = tmp_path / "frame.png"
+    result = await module.text_to_image("frame", str(out))
+
+    assert fake_client.gets[-1][0] == artifact
+    assert fake_client.gets[-1][1]["headers"] is None
+    assert result.url == str(out)

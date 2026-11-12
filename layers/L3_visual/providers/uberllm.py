@@ -6,6 +6,7 @@ import mimetypes
 import os
 import uuid
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -210,9 +211,39 @@ async def _poll_job(
         await asyncio.sleep(poll_interval_sec)
 
 
+_DEFAULT_PORTS = {"http": 80, "https": 443}
+
+
+def _origin_and_path(url: str) -> tuple[tuple[str, str, int | None], str] | None:
+    try:
+        parts = urlsplit(url)
+        port = parts.port or _DEFAULT_PORTS.get(parts.scheme.lower())
+    except ValueError:
+        return None
+    if not parts.scheme or not parts.hostname or parts.username or parts.password:
+        return None
+    return (parts.scheme.lower(), parts.hostname.lower(), port), parts.path or "/"
+
+
+def _is_api_url(url: str) -> bool:
+    """True only for links on the configured API origin, under its base path.
+
+    Compares parsed scheme, host and port (no string prefix, so a lookalike
+    host such as api.example.com.evil.net or user@host tricks never match),
+    then checks the path on a segment boundary (/v1 matches /v1/files/x,
+    not /v1evil/x).
+    """
+    base = _origin_and_path(_base_url())
+    target = _origin_and_path(url)
+    if base is None or target is None or base[0] != target[0]:
+        return False
+    base_path = base[1].rstrip("/")
+    return not base_path or target[1] == base_path or target[1].startswith(base_path + "/")
+
+
 async def _download(client: httpx.AsyncClient, url: str, output_path: str) -> None:
-    # Result links live under the API and need the same key.
-    headers = _auth_headers() if url.startswith(_base_url()) else None
+    # Result links on the API need the same key; any other host gets no key.
+    headers = _auth_headers() if _is_api_url(url) else None
     resp = await client.get(url, headers=headers, follow_redirects=True)
     resp.raise_for_status()
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
@@ -258,7 +289,9 @@ async def text_to_image(
             raise RuntimeError("UberLLM image generation returned no image URL")
         await _download(client, url, output_path)
 
-    return ImageResult(url=url, local_path=output_path, model=model_id)
+    # The result link needs the API key and expires after 24 hours, so callers
+    # get the downloaded copy in our own output storage, never the link.
+    return ImageResult(url=output_path, local_path=output_path, model=model_id)
 
 
 async def image_to_video(
@@ -315,8 +348,9 @@ async def image_to_video(
             raise RuntimeError("UberLLM video generation completed without an output URL")
         await _download(client, results[0]["url"], output_path)
 
+    # Same as images: hand out the local copy, not the key-gated link.
     return VideoResult(
-        url=results[0]["url"],
+        url=output_path,
         local_path=output_path,
         duration_sec=results[0].get("duration_seconds") or payload["duration_seconds"],
         task_id=job_id,
