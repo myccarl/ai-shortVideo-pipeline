@@ -24,6 +24,10 @@ from layers.L3_visual.providers.muapi import (
     image_to_video as _muapi_image_to_video,
     is_muapi_provider,
 )
+from layers.L3_visual.providers.uberllm import (
+    image_to_video as _uberllm_image_to_video,
+    is_uberllm_provider,
+)
 from layers.L3_visual.providers.kling_v3 import image_to_video as _kling_image_to_video
 from layers.L3_visual.text_artifact_guard import inspect_text_artifacts
 from layers.L3_visual.text_to_image import generate_image
@@ -66,6 +70,17 @@ async def image_to_video(
         )
     if is_atlascloud_provider(provider):
         return await _atlascloud_image_to_video(
+            image_path=image_path,
+            prompt=prompt,
+            output_path=output_path,
+            duration_sec=duration_sec,
+            aspect_ratio=aspect_ratio,
+            quality=quality,
+            character_ref_path=character_ref_path,
+            camera_control=camera_control,
+        )
+    if is_uberllm_provider(provider):
+        return await _uberllm_image_to_video(
             image_path=image_path,
             prompt=prompt,
             output_path=output_path,

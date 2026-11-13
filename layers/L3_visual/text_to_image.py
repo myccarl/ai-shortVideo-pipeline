@@ -15,6 +15,10 @@ from layers.L3_visual.providers.atlascloud import (
     is_atlascloud_provider,
     text_to_image as atlascloud_text_to_image,
 )
+from layers.L3_visual.providers.uberllm import (
+    is_uberllm_provider,
+    text_to_image as uberllm_text_to_image,
+)
 
 log = logging.getLogger(__name__)
 
@@ -67,6 +71,23 @@ async def generate_image(
             negative_prompt=negative_prompt,
             aspect_ratio=aspect_ratio,
             model=requested_model or getattr(cfg, "atlascloud_image_model", ""),
+            character_ref_path=character_ref_path,
+            positive_suffix=positive_suffix,
+        )
+        return await _attach_clip_consistency(
+            result,
+            image_path=output_path,
+            prompt=full_prompt,
+            storyboard_id=storyboard_id,
+            clip_no=clip_no,
+        )
+    if is_uberllm_provider(getattr(cfg, "visual_image_provider", "kling")):
+        result = await uberllm_text_to_image(
+            prompt=prompt,
+            output_path=output_path,
+            negative_prompt=negative_prompt,
+            aspect_ratio=aspect_ratio,
+            model=requested_model or getattr(cfg, "uberllm_image_model", ""),
             character_ref_path=character_ref_path,
             positive_suffix=positive_suffix,
         )
