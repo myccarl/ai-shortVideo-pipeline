@@ -68,7 +68,7 @@ class Settings(BaseSettings):
     muapi_media_base_url: str = "https://api.muapi.ai/api/v1"
     muapi_video_model: str = "seedance-2-image-to-video-fast"
     uberllm_api_key: str = ""
-    uberllm_base_url: str = "https://api.uberllm.dev/v1"
+    uberllm_base_url: str = "https://api.martllm.com/v1"
     uberllm_image_model: str = "venice/seedream-v5-lite"
     uberllm_video_model: str = "bytedance/seedance-2-0-fast-image-to-video"
     uberllm_video_resolution: str = "720p"

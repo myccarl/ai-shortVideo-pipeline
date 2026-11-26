@@ -15,7 +15,7 @@ from layers.L3_visual.providers.base import ImageResult, VideoResult
 
 log = logging.getLogger(__name__)
 
-DEFAULT_BASE_URL = "https://api.uberllm.dev/v1"
+DEFAULT_BASE_URL = "https://api.martllm.com/v1"
 DEFAULT_IMAGE_MODEL = "venice/seedream-v5-lite"
 DEFAULT_VIDEO_MODEL = "bytedance/seedance-2-0-fast-image-to-video"
 PRO_VIDEO_MODEL = "bytedance/seedance-2-0-image-to-video"
@@ -30,7 +30,7 @@ def _api_key() -> str:
     cfg = get_settings()
     key = getattr(cfg, "uberllm_api_key", "") or os.getenv("UBERLLM_API_KEY")
     if not key:
-        raise RuntimeError("UBERLLM_API_KEY is required for UberLLM media generation")
+        raise RuntimeError("UBERLLM_API_KEY is required for MartLLM media generation")
     return key
 
 
@@ -58,7 +58,7 @@ async def _model_options(client: httpx.AsyncClient, model_id: str) -> dict[str, 
         resp.raise_for_status()
         props = (resp.json().get("parameters") or {}).get("properties")
     except (httpx.HTTPError, ValueError, AttributeError) as exc:
-        log.warning("[UberLLM] could not read options for %s: %s", model_id, exc)
+        log.warning("[MartLLM] could not read options for %s: %s", model_id, exc)
         return {}
     return props if isinstance(props, dict) else {}
 
@@ -128,12 +128,12 @@ def _image_payload(
     elif size:
         payload["size"] = size
     elif aspect_ratio:
-        log.info("[UberLLM] %s does not take aspect_ratio=%s, using its default", model_id, aspect_ratio)
+        log.info("[MartLLM] %s does not take aspect_ratio=%s, using its default", model_id, aspect_ratio)
     if negative_prompt:
         if "negative_prompt" in options:
             payload["negative_prompt"] = negative_prompt
         else:
-            log.info("[UberLLM] negative_prompt is ignored by %s schema", model_id)
+            log.info("[MartLLM] negative_prompt is ignored by %s schema", model_id)
     return payload
 
 
@@ -184,7 +184,7 @@ async def _upload_image(client: httpx.AsyncClient, image_path: str) -> str:
     resp.raise_for_status()
     file_id = resp.json().get("id")
     if not isinstance(file_id, str) or not file_id:
-        raise RuntimeError("UberLLM file upload returned no file id")
+        raise RuntimeError("MartLLM file upload returned no file id")
     return file_id
 
 
@@ -205,9 +205,9 @@ async def _poll_job(
             return job
         if status in {"failed", "canceled", "expired"}:
             error = job.get("error") if isinstance(job.get("error"), dict) else {}
-            raise RuntimeError(f"UberLLM video generation {status}: {error.get('message') or status}")
+            raise RuntimeError(f"MartLLM video generation {status}: {error.get('message') or status}")
         if asyncio.get_running_loop().time() >= deadline:
-            raise TimeoutError(f"UberLLM video generation timed out for job {job_id}")
+            raise TimeoutError(f"MartLLM video generation timed out for job {job_id}")
         await asyncio.sleep(poll_interval_sec)
 
 
@@ -266,7 +266,7 @@ async def text_to_image(
     model_id = model or getattr(cfg, "uberllm_image_model", "") or DEFAULT_IMAGE_MODEL
     full_prompt = f"{prompt}, {positive_suffix.strip()}" if positive_suffix else prompt
     if character_ref_path:
-        log.info("[UberLLM] character_ref_path is ignored by %s schema", model_id)
+        log.info("[MartLLM] character_ref_path is ignored by %s schema", model_id)
 
     async with httpx.AsyncClient(timeout=timeout_sec) as client:
         options = await _model_options(client, model_id)
@@ -286,7 +286,7 @@ async def text_to_image(
         data = resp.json().get("data") or []
         url = data[0].get("url") if data and isinstance(data[0], dict) else None
         if not url:
-            raise RuntimeError("UberLLM image generation returned no image URL")
+            raise RuntimeError("MartLLM image generation returned no image URL")
         await _download(client, url, output_path)
 
     # The result link needs the API key and expires after 24 hours, so callers
@@ -305,15 +305,15 @@ async def image_to_video(
     camera_control: dict | None = None,
     timeout_sec: int = 900,
 ) -> VideoResult:
-    """Generate a video from a local start frame through UberLLM /video/generations."""
+    """Generate a video from a local start frame through MartLLM /video/generations."""
     if not os.path.isfile(image_path):
-        raise FileNotFoundError(f"UberLLM start frame not found: {image_path}")
+        raise FileNotFoundError(f"MartLLM start frame not found: {image_path}")
     cfg = get_settings()
     model_id = _video_model(quality)
     if character_ref_path:
-        log.info("[UberLLM] character_ref_path is ignored by %s schema", model_id)
+        log.info("[MartLLM] character_ref_path is ignored by %s schema", model_id)
     if camera_control:
-        log.info("[UberLLM] camera_control is ignored by %s schema", model_id)
+        log.info("[MartLLM] camera_control is ignored by %s schema", model_id)
 
     async with httpx.AsyncClient(timeout=timeout_sec) as client:
         options = await _model_options(client, model_id)
@@ -340,12 +340,12 @@ async def image_to_video(
         resp.raise_for_status()
         job_id = resp.json().get("id")
         if not job_id:
-            raise RuntimeError("UberLLM video generation returned no job id")
+            raise RuntimeError("MartLLM video generation returned no job id")
 
         job = await _poll_job(client, job_id, timeout_sec=timeout_sec, poll_interval_sec=5)
         results = [r for r in job.get("results") or [] if isinstance(r, dict) and r.get("url")]
         if not results:
-            raise RuntimeError("UberLLM video generation completed without an output URL")
+            raise RuntimeError("MartLLM video generation completed without an output URL")
         await _download(client, results[0]["url"], output_path)
 
     # Same as images: hand out the local copy, not the key-gated link.
